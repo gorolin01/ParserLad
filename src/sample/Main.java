@@ -25,6 +25,7 @@ public class Main {
     private static String mainUrl = "http://ptplad.ru";
     private static int fromPage = 1;
     private static int toPage = 1;
+    private  static int NUMBER_OF_COLUMNS = 5;
 
     public static void main(String[] args) {
 
@@ -208,6 +209,7 @@ public class Main {
         Excel excel = new Excel();
         excel.createExcel();
         int Row = 0;
+        int Column = 0;
 
         //System.setProperty("webdriver.chrome.driver", "selenium\\chromedriver.exe");
 
@@ -228,8 +230,7 @@ public class Main {
 
             for(int nomerTovara = 0; nomerTovara < doc.select(".col4").size(); nomerTovara++){
 
-                //название
-                excel.setCell(Row, 0, doc.select(".product_info").get(nomerTovara).select(".ttl").text());
+                Row = (Column / NUMBER_OF_COLUMNS) * NUMBER_OF_COLUMNS;
 
                 //загрузка картинок
                 String s = doc.select(".img_wrap").get(nomerTovara).select("img").attr("src");
@@ -241,118 +242,27 @@ public class Main {
                         exception.printStackTrace();
                     }
                 }
-                excel.setImg(Row, 1,"parsing_" + SiteName + "/" + doc.select(".code").select(".left").get(nomerTovara).text().replace(":", ""));
-
-
+                excel.setImg(Row, Column % NUMBER_OF_COLUMNS,"parsing_" + SiteName + "/" + doc.select(".code").select(".left").get(nomerTovara).text().replace(":", ""));
                 Row++;
+
+                //название
+                excel.setCell(Row, Column % NUMBER_OF_COLUMNS, doc.select(".product_info").get(nomerTovara).select(".ttl").text());
+                Row++;
+
+                //артикул
+                excel.setCell(Row, Column % NUMBER_OF_COLUMNS, doc.select(".code").select(".left").get(nomerTovara).text().substring(11));
+                Row++;
+
+                //Штрих-код
+                excel.setCell(Row, Column % NUMBER_OF_COLUMNS, "ШК");
+                Row++;
+
+                Column++;
             }
-//-----------------------------------------------------------------------------------------------------//
-//-----------------------------------------------------------------------------------------------------//
-            /*//проходим по товарам на странице
-            for(int nomerTovara = 0; nomerTovara < doc.select(".item-title").size(); nomerTovara++){
-
-                Document docTovara = getDoc(ListKartochkiInPage.get(nomerTovara));
-
-                int Row = 0;
-
-                //регулярным выражением нужно убрать знак "/" из названия!
-                //создает подпапки с названием товара
-                String nameFolder = docTovara.getElementById("pagetitle").text().replace("/", "-").replace("*", "x").replace(":", " ").replace("\"", "");
-
-                new File("parsing_" + SiteName + "/" + nameFolder).mkdirs();
-
-                //загрузка картинок
-                for(int e = 0; e < docTovara.select(".product-detail-gallery__link").select(".popup_link").select(".fancy").size(); e++){
-                    String s = docTovara.select(".product-detail-gallery__link").select(".popup_link").select(".fancy").attr("href");
-                    System.out.println(s);
-                    if(s.contains("/")){
-                        try {
-                            Download(mainUrl + s, s.substring(s.lastIndexOf("/")).replace("/", ""), "parsing_" + SiteName + "/" + nameFolder);
-                        } catch (Exception exception) {
-                            exception.printStackTrace();
-                        }
-                    }
-                }
-
-                //Акция
-                resList = getArrayStrOnFile("sale.txt");
-                for(int e = 0; e < resList.size(); e++){
-                    excel.setCell(Row + e, 0, resList.get(e));
-                    writeTXT(resList.get(e),"parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                }
-                Row = Row + resList.size() + 1;
-                writeTXT("\n","parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-
-                //описание
-                System.out.println(doc.select(".tab-pane").select("div").text());
-                //writeOnTxt(doc.html(), 1);
-                select = doc.select(".tab-content").select(".tab-pane");
-                //writeOnTxt(docTovara.html(), 1);
-                writeTXT(docTovara.getElementById("desc").select("div").text(),"parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                excel.setCell(Row, 0, docTovara.getElementById("desc").select("div").text());  //не знаю максимальной длинны строки в ячейке excel. Может быть переполнение!
-                Row = Row + 2;
-                writeTXT("\n","parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-
-                //характеристики
-                writeTXT(docTovara.select(".product-info-headnote__article").text(),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                select = docTovara.select(".properties").select(".list").get(0).select(".properties__item").select(".properties__item--compact");
-                for(int div = 0; div < select.size(); div++){
-                    excel.setCell(Row, 0, select.get(div).select(".properties__title").text());
-                    excel.setCell(Row, 1, select.get(div).select(".properties__value").text());
-                    writeTXT(select.get(div).select(".properties__title").text() + ":  "
-                            + select.get(div).select(".properties__value").text(),
-                            "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                    Row = Row + 1;
-                }
-                Row = Row + 1;
-                select = doc.select(".item-stock"); //наличие
-                writeTXT("Наличие: " + select.get(nomerTovara).text(),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                writeTXT("\n","parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-
-                //подвал
-                resList = getArrayStrOnFile("bottom.txt");
-                for(int e = 0; e < resList.size(); e++){
-                    excel.setCell(Row + e, 0, resList.get(e));
-                    writeTXT(resList.get(e),
-                            "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                }
-                Row = Row + resList.size();
-                writeTXT("\n","parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-
-                //цена, количество и ссылка на товар
-                Row = Row + 2;
-                select = doc.select(".item-stock"); //наличие
-                excel.setCell(Row, 0, select.get(nomerTovara).text());
-                writeTXT("Наличие: " + select.get(nomerTovara).text(),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                Row++;
-                select = docTovara.select(".price_matrix_wrapper").get(3).select("div"); //цена (нужно будет сделать через селениум с авторизацией)
-                excel.setCell(Row, 0, select.text());
-                writeTXT("Цена(розница БЕЗ авторизации): " + select.text(),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                Row++;
-                //select = doc.select(".pr-stock_el");
-                excel.setCell(Row, 0, ListKartochkiInPage.get(nomerTovara));
-                writeTXT("Ссылка на товар: " + ListKartochkiInPage.get(nomerTovara),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                Row++;
-                excel.setCell(Row, 0, URLPage.get(w));
-                writeTXT(URLPage.get(w),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                Row++;
-                excel.setCell(Row, 0, docTovara.select(".product-info-headnote__article").text());  //артикул
-                writeTXT(docTovara.select(".product-info-headnote__article").text(),
-                        "parsing_" + SiteName + "/" + nameFolder + "/" + "ОписаниеTXT.txt");
-                Row++;
-
-            }*/
 
         }
 
         System.out.println(URLPage.size());
-        //System.out.println("parsing_" + SiteName + "/" + ".xlsx");
         excel.Build("parsing_" + SiteName + "/" + "Описание" + ".xlsx");
     }
 
